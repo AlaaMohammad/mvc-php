@@ -1,31 +1,14 @@
 <?php
-require_once 'config/Database.php';
-class Product
+
+require_once 'models/Model.php';
+class Product extends Model
 {
 
-    private $conn;
-
-    public function __construct() {
-        $this->conn = Database::getInstance();
-    }
-
-    public function getProducts(){
-        $products = $this->conn->query("SELECT * FROM products");
-        $products = $products->fetchAll(PDO::FETCH_ASSOC);
-        return $products;
-    }
-    public function find($id)
+    public function __construct()
     {
-        $stmt = $this->conn->prepare("SELECT * FROM products WHERE id = :id");
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-        $stmt->execute();
+        parent::__construct('products');
 
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($result) {
-            return $result;
-        }
-        return null;
     }
+
 
 }

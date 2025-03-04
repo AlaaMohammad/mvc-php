@@ -11,7 +11,11 @@ $router->get('/products', 'ProductController@index', 'product.index');
 $router->get('/products/{id}', 'ProductController@show', 'product.show');
 
 $router->get('/users', 'UserController@index', 'user.list');
+$router->get('/users/create', 'UserController@create', 'user.create');
+
 $router->get('/users/{id}', 'UserController@show', 'user.list');
+
+
 
 
 $router->dispatch();

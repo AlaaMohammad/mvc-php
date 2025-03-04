@@ -1,11 +1,16 @@
 <?php
 require_once 'models/Product.php';
-class ProductController
+require_once 'controllers/Controller.php';
+class ProductController extends Controller
 {
 
     public function index()
     {
-      require_once 'views/products/show.view.php';
+        $title = 'Products';
+        $product = new Product();
+        $products = $product->all();
+        //dd($products);
+        $this->render('products/show', ['products' => $products,'title'=>$title]);
     }
 
     public function show($id)
@@ -13,6 +18,8 @@ class ProductController
         $product = new Product();
         $product = $product->find($id);
        // var_dump($product);
-        require_once 'views/products/show.view.php';
+        require_once 'views/products/show.php';
     }
+
+
 }

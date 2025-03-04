@@ -1,6 +1,7 @@
 <?php
 require_once 'models/User.php';
-class UserController extends BaseController
+require_once 'controllers/Controller.php';
+class UserController extends Controller
 {
 
     public function index()
@@ -8,8 +9,10 @@ class UserController extends BaseController
         $users = new User();
         $users = $users->getUsers();
         $title = 'Users';
-        require_once 'views/users/show.view.php';
-        view('users.show', compact('users','title'));
+        $this->render('product.index', [
+            'products' => $products,
+            'pageTitle' => 'All Products'
+        ]);
 
     }
 
@@ -17,5 +20,9 @@ class UserController extends BaseController
     public function show($id)
     {
         echo "<h1>Showing user with ID: {$id}</h1>";
+    }
+    public function create()
+    {
+        $this->render('users/create', ['title' => 'Create Product']);
     }
 }

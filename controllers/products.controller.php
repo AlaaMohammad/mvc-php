@@ -11,6 +11,6 @@ try {
 }
 
 
-require_once 'views/products/show.view.php';
+require_once 'views/products/show.php';
 
 ?>

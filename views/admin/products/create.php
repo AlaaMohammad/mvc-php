@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prepaid Plans & Lines - Orange Jordan</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boosted/dist/css/boosted.min.css">
     <style>
@@ -53,15 +52,22 @@
     <p class="text-center">Get exceptional Orange Jordan sim cards and prepaid lines with great offers.</p>
 
     <div class="row">
-        <?php foreach ($users as $user): ?>
-            <div class="col-md-4 mb-4">
-                <div class="card p-3">
-                    <h1><?php echo $user['username'] ?></h1>
-                    <h5 class="card-title"><?= $user['email'] ?></h5>
-                    <a href="#" class="btn orange-btn">View Details</a>
-                </div>
+        <form>
+            <div class="mb-3">
+                <label for="exampleInputEmail1" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+                <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
             </div>
-        <?php endforeach; ?>
+            <div class="mb-3">
+                <label for="exampleInputPassword1" class="form-label">Password</label>
+                <input type="password" class="form-control" id="exampleInputPassword1">
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="exampleCheck1">
+                <label class="form-check-label" for="exampleCheck1">Check me out</label>
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Submit</button>
+        </form>
     </div>
 </div>
 
