@@ -1,133 +1,76 @@
 <?php
-require_once 'controllers/HomeController.php';
-/**
- * Router Class
- *
- * Handles routing for an MVC framework including:
- * - Route registration
- * - Parameter extraction
- * - Route dispatching
- * - URL generation
- */
+
 class Router
 {
-    /**
-     * Collection of registered routes
-     * @var array
-     */
     private $routes = [];
-
-    /**
-     * Base URL for the application
-     * @var string
-     */
     private $baseUrl;
-
-    /**
-     * Current URI
-     * @var string
-     */
     private $currentUri;
 
-    /**
-     * Default controller to use if no route matches
-     * @var string
-     */
-    private $defaultController = 'HomeController';
-
-    /**
-     * Default action to use if no route matches
-     * @var string
-     */
-    private $defaultAction = 'index';
-
-    /**
-     * Constructor
-     *
-     * @param string $baseUrl Base URL for the application
-     */
     public function __construct($baseUrl = '')
     {
         $this->baseUrl = $baseUrl;
         $this->currentUri = $this->getRequestUri();
     }
 
-    /**
-     * Get the current request URI
-     *
-     * @return string
-     */
     private function getRequestUri()
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
-
-        // Remove query string
         if (($pos = strpos($uri, '?')) !== false) {
             $uri = substr($uri, 0, $pos);
         }
-
-        // Remove base URL from URI if present
         if (!empty($this->baseUrl) && strpos($uri, $this->baseUrl) === 0) {
             $uri = substr($uri, strlen($this->baseUrl));
         }
-
-        // Ensure leading slash
         if (empty($uri) || $uri[0] !== '/') {
             $uri = '/' . $uri;
         }
-
         return $uri;
     }
 
-    /**
-     * Register a new route
-     *
-     * @param string $method HTTP method (GET, POST, etc.)
-     * @param string $pattern URL pattern with optional parameters like {id}
-     * @param string|array $handler Controller and action to handle the route
-     * @param string $name Optional name for the route
-     * @return self
-     */
     public function add($method, $pattern, $handler, $name = null)
     {
-        // Convert to uppercase
         $method = strtoupper($method);
 
-        // Parse handler
+        // Parse handler (controller@action)
         if (is_string($handler)) {
-            // Format: "ControllerName@actionName"
             list($controller, $action) = explode('@', $handler);
-        } else if (is_array($handler) && count($handler) >= 2) {
-            // Format: ['ControllerName', 'actionName']
+        } elseif (is_array($handler) && count($handler) >= 2) {
             list($controller, $action) = $handler;
         } else {
             throw new \InvalidArgumentException('Invalid route handler specified');
         }
 
-        // Extract parameter names from pattern
+        // Find all {param} placeholders
         $paramNames = [];
-        if (strpos($pattern, '{') !== false) {
-            preg_match_all('/{([^}]+)}/', $pattern, $matches);
-            $paramNames = $matches[1];
+        $patternRegex = $pattern;
 
-            // Convert pattern to regex for matching
-            $patternRegex = preg_replace('/{([^}]+)}/', '([^/]+)', $pattern);
-            $patternRegex = '#^' . $patternRegex . '$#';
-        } else {
-            $patternRegex = '#^' . $pattern . '$#';
+        // If we find {something}, convert it to a regex group ([^/]+)
+        if (preg_match_all('/\{([A-Za-z_][A-Za-z0-9_]*)\}/', $pattern, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $fullMatch = $m[0]; // e.g. {id}
+                $paramName = $m[1]; // e.g. id
+
+                $paramNames[] = $paramName;
+
+                // Replace {id} with ([^/]+)
+                $patternRegex = str_replace($fullMatch, '([^/]+)', $patternRegex);
+            }
         }
 
-        // Store route
+        // Enclose the final pattern in regex start/end
+        $patternRegex = '#^' . $patternRegex . '$#';
+
+        // Store the route definition
         $route = [
-            'method' => $method,
-            'pattern' => $pattern,
-            'regex' => $patternRegex,
+            'method'     => $method,
+            'pattern'    => $pattern,
+            'regex'      => $patternRegex,
             'controller' => $controller,
-            'action' => $action,
+            'action'     => $action,
             'paramNames' => $paramNames
         ];
 
-        // Store with name if provided
+        // Store either with a name or in a numeric array
         if ($name) {
             $this->routes[$name] = $route;
         } else {
@@ -137,66 +80,35 @@ class Router
         return $this;
     }
 
-    /**
-     * Add a GET route
-     *
-     * @param string $pattern URL pattern
-     * @param string|array $handler Controller and action
-     * @param string $name Optional route name
-     * @return self
-     */
+    // Shortcut methods for HTTP verbs
     public function get($pattern, $handler, $name = null)
     {
         return $this->add('GET', $pattern, $handler, $name);
     }
 
-    /**
-     * Add a POST route
-     *
-     * @param string $pattern URL pattern
-     * @param string|array $handler Controller and action
-     * @param string $name Optional route name
-     * @return self
-     */
     public function post($pattern, $handler, $name = null)
     {
         return $this->add('POST', $pattern, $handler, $name);
     }
 
-    /**
-     * Add a PUT route
-     *
-     * @param string $pattern URL pattern
-     * @param string|array $handler Controller and action
-     * @param string $name Optional route name
-     * @return self
-     */
     public function put($pattern, $handler, $name = null)
     {
         return $this->add('PUT', $pattern, $handler, $name);
     }
 
-    /**
-     * Add a DELETE route
-     *
-     * @param string $pattern URL pattern
-     * @param string|array $handler Controller and action
-     * @param string $name Optional route name
-     * @return self
-     */
     public function delete($pattern, $handler, $name = null)
     {
         return $this->add('DELETE', $pattern, $handler, $name);
     }
 
-    /**
-     * Generate a URL for a named route
-     *
-     * @param string $name Route name
-     * @param array $params Parameters to include in the URL
-     * @return string The generated URL
-     * @throws \Exception If route name not found
-     */
+    // If you want a catch-all:
+    /*
+    public function any($pattern, $handler, $name = null)
+    {
+        return $this->add('ANY', $pattern, $handler, $name);
+    }
+    */
+
     public function generateUrl($name, $params = [])
     {
         if (!isset($this->routes[$name])) {
@@ -204,115 +116,73 @@ class Router
         }
 
         $route = $this->routes[$name];
-        $url = $route['pattern'];
+        $url   = $route['pattern'];
 
-        // Replace parameters in URL
+        // Replace {param} in the pattern with $params[$param]
         foreach ($params as $key => $value) {
+            // We'll replace {key} with the param value
             $url = str_replace("{{$key}}", $value, $url);
         }
 
-        // If any parameters weren't replaced, throw exception
+        // Check if we still have unreplaced parameters
         if (strpos($url, '{') !== false) {
-            preg_match_all('/{([^}]+)}/', $url, $matches);
-            throw new \Exception("Missing required parameters: " . implode(', ', $matches[1]));
+            preg_match_all('/\{([^}]+)\}/', $url, $missing);
+            if (!empty($missing[1])) {
+                throw new \Exception(
+                    "Missing required parameters: " . implode(', ', $missing[1])
+                );
+            }
         }
 
         return $this->baseUrl . $url;
     }
 
-    /**
-     * Dispatch the current request to the appropriate controller
-     *
-     * @return mixed The response from the controller action
-     */
     public function dispatch()
     {
-        $method = $_SERVER['REQUEST_METHOD'];
-
-        // Check for method override via _method form field
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         if ($method === 'POST' && isset($_POST['_method'])) {
             $method = strtoupper($_POST['_method']);
         }
 
-        // Find matching route
         foreach ($this->routes as $route) {
-            // Match HTTP method
+            // Skip if method doesn't match (unless we used ANY)
             if ($route['method'] !== $method && $route['method'] !== 'ANY') {
                 continue;
             }
 
-            // Match URL pattern
+            // Check if we match the URI with this route's regex
             if (preg_match($route['regex'], $this->currentUri, $matches)) {
-                // Extract parameters
-                array_shift($matches); // Remove full match
-                $params = [];
+                array_shift($matches); // Remove the full match
 
-                // Associate parameter names with values
-                foreach ($route['paramNames'] as $index => $name) {
-                    $params[$name] = isset($matches[$index]) ? $matches[$index] : null;
+                // Build an array of param => value
+                $params = [];
+                foreach ($route['paramNames'] as $index => $paramName) {
+                    $params[$paramName] = $matches[$index] ?? null;
                 }
 
-                // Create controller and call action
-                $controllerName = $route['controller'];
-                $actionName = $route['action'];
-
-                return $this->executeController($controllerName, $actionName, $params);
+                return $this->executeController(
+                    $route['controller'],
+                    $route['action'],
+                    $params
+                );
             }
         }
 
-        // No route found, use default controller/action
-        return $this->executeController($this->defaultController, $this->defaultAction);
+        // If no matching route is found, throw an exception or handle 404
+        throw new \Exception('No matching route found');
     }
 
-    /**
-     * Execute a controller action
-     *
-     * @param string $controllerName Controller class name
-     * @param string $actionName Action method name
-     * @param array $params Parameters to pass to the action
-     * @return mixed The response from the controller action
-     * @throws \Exception If controller or action not found
-     */
     private function executeController($controllerName, $actionName, $params = [])
     {
-        // Ensure controller class exists
         if (!class_exists($controllerName)) {
             throw new \Exception("Controller '{$controllerName}' not found");
         }
 
-        // Create controller instance
         $controller = new $controllerName();
-
-        // Ensure action method exists
         if (!method_exists($controller, $actionName)) {
             throw new \Exception("Action '{$actionName}' not found in controller '{$controllerName}'");
         }
 
-        // Call the action with parameters
         return call_user_func_array([$controller, $actionName], $params);
-    }
-
-    /**
-     * Set the default controller
-     *
-     * @param string $controller Controller class name
-     * @return self
-     */
-    public function setDefaultController($controller)
-    {
-        $this->defaultController = $controller;
-        return $this;
-    }
-
-    /**
-     * Set the default action
-     *
-     * @param string $action Action method name
-     * @return self
-     */
-    public function setDefaultAction($action)
-    {
-        $this->defaultAction = $action;
-        return $this;
     }
 }

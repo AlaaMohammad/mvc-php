@@ -1,16 +1,13 @@
 <?php
 require_once 'config/Database.php';
 
-class User
+class User extends Model
 {
-    private $conn;
-    public function __construct() {
-        $this->conn = Database::getInstance();
-    }
-    public function getUsers(){
-        $users = $this->conn->query("SELECT * FROM users");
-        $users = $users->fetchAll(PDO::FETCH_ASSOC);
-        return $users;
+
+    public function getUsers()
+    {
+
+        return null;
     }
 
 }

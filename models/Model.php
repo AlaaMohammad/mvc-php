@@ -1,5 +1,5 @@
 <?php
-
+require_once 'config/Database.php';
 /**
  * Base Model Class
  *
@@ -20,16 +20,23 @@ class Model
     public function __construct($table = null)
     {
         $this->db = Database::getInstance();
-
         // If table name is provided, use it; otherwise use lowercase class name
         if ($table) {
             $this->table = $table;
         } else {
             // Convert CamelCase class name to snake_case table name
             $className = get_class($this);
-            $tableName = strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $className));
-            $this->table = $tableName;
-        }
+
+            $tableName = strtolower(
+                preg_replace('/(?<!^)[A-Z]/', '_$0', $className)
+            );
+
+            // Append 's' if not already ending in 's'
+            if (substr($tableName, -1) !== 's') {
+                $tableName .= 's';
+            }
+
+            $this->table = $tableName;}
     }
 
     /**
@@ -40,10 +47,12 @@ class Model
      */
     public function find($id)
     {
+        //dd($id);
         try {
             $stmt = $this->db->prepare("SELECT * FROM {$this->table} WHERE {$this->primaryKey} = :id LIMIT 1");
             $stmt->bindParam(':id', $id);
             $stmt->execute();
+            //dd($stmt->fetch(PDO::FETCH_ASSOC));
             return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Database error in find(): " . $e->getMessage());
@@ -95,9 +104,15 @@ class Model
                 $stmt->bindValue(":{$key}", $value);
             }
 
-            if ($stmt->execute()) {
+            $result = $stmt->execute();
+            if ($result) {
+                // Success
                 return $this->db->lastInsertId();
             } else {
+                // Failure: let's see the actual error
+                $errorInfo = $stmt->errorInfo();
+                // Log or inspect $errorInfo
+                error_log('Insert failed: ' . print_r($errorInfo, true));
                 return false;
             }
         } catch (PDOException $e) {
@@ -105,6 +120,7 @@ class Model
             return false;
         }
     }
+
 
     /**
      * Update an existing record

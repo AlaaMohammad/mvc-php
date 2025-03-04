@@ -93,7 +93,7 @@ class Controller
     {
         // Convert dot notation to directory structure (e.g., 'user.profile' to 'user/profile')
         $view = str_replace('.', '/', $view);
-        return dirname(__DIR__) . '/views/' . $view . '.php';
+        return dirname(__DIR__) . '/views/' . $view . '.view.php';
     }
 
     /**
