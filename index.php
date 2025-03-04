@@ -13,6 +13,10 @@ $router = new Router();
 //}, 'home');
 
 //users routes
+$router->get('admin/login', 'AdminController@login', 'admin.login');
+$router->post('admin/login', 'AdminController@authenticate', 'admin.authenticate');
+
+
 $router->get('/users', 'UserController@index', 'user.list');
 
 $router->get('/users/create', 'UserController@create', 'user.create');
